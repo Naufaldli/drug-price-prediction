@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Beranda{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    {# Menampilkan pesan flash dari Flask #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+<section class="hero-section">
+    <div class="overlay"></div>
+    <div class="container text-center text-white">
+        <h1 class="display-5 fw-bold">Selamat datang di Prediksi Harga Obat</h1>
+        <p class="lead">Unggah data harga obat untuk melihat prediksi dan bandingkan performa model AI</p>
+    </div>
+</section>
+
+<section class="form-wrapper py-5">
+    <div class="container d-flex justify-content-center">
+        <div class="form-container card-upload w-100 p-4 shadow-lg rounded" style="max-width: 600px;">
+            <h4 class="mb-4 text-center">Prediksi Harga Obat dari CSV</h4>
+            <form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="csvFile" class="form-label">Unggah File CSV</label>
+                    <input type="file" class="form-control" id="csvFile" name="file" accept=".csv" required>
+                    <div id="fileHelp" class="form-text">Pastikan file CSV Anda memiliki kolom "Tanggal" dan "Harga".</div>
+                </div>
+                <div class="mb-3">
+                    <label for="modelSelect" class="form-label">Pilih Model</label>
+                    <select class="form-select" id="modelSelect" name="model">
+                        <option value="LSTM">LSTM</option>
+                        <option value="TCN">TCN</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Prediksi Sekarang</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+{# Bagian untuk menampilkan plot hasil unggahan telah dihapus karena tidak ada fitur penyimpanan plot di server #}
+
+<div class="text-center mt-5 mb-5">
+    <a href="{{ url_for('future') }}" class="btn btn-info btn-lg">🚀 Prediksi Harga Masa Depan (Multi-Step)</a>
+</div>
+{% endblock %}

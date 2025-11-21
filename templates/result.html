@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Hasil Prediksi{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    {# Menampilkan pesan flash dari Flask #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+<section class="mb-4 text-center">
+    <h2 class="text-white">📊 Hasil Prediksi Harga Obat ({{ model }})</h2>
+    <p class="lead text-white-50">Visualisasi performa model berdasarkan data Anda.</p>
+</section>
+
+<div class="chart-wrapper mb-5">
+    <div class="chart-container bg-white p-3 rounded shadow">
+        <canvas id="predictionChart" style="width: 100%; height: 500px;"></canvas>
+    </div>
+</div>
+
+<div class="text-center mb-5">
+    <button class="btn btn-outline-primary btn-lg" onclick="downloadChartImage()">⬇️ Download Grafik</button>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-6 mb-4">
+        <div class="card result-info">
+            <div class="card-header">
+                Metrik Evaluasi Model
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Mean Absolute Error (MAE):
+                        <span class="badge bg-primary rounded-pill">{{ "Rp {:,.2f}".format(mae|float)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Root Mean Squared Error (RMSE):
+                        <span class="badge bg-primary rounded-pill">{{ "Rp {:,.2f}".format(rmse|float)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Mean Absolute Percentage Error (MAPE):
+                        <span class="badge bg-primary rounded-pill">{{ "{:,.2f}%".format(mape|float)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card result-info">
+            <div class="card-header">
+                Ringkasan Data
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Jumlah Data Historis:
+                        <span class="badge bg-primary rounded-pill">{{ labels|length }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Tanggal Mulai Data:
+                        <span class="badge bg-primary rounded-pill">{{ labels[0] if labels else 'N/A' }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Tanggal Akhir Data:
+                        <span class="badge bg-primary rounded-pill">{{ labels[-1] if labels else 'N/A' }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center">
+    <a href="{{ url_for('home') }}" class="btn btn-secondary">Kembali ke Form Pelatihan Model</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.1.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script>
+    let chart; // Deklarasi chart di luar agar bisa diakses oleh downloadChartImage
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('predictionChart');
+
+        if (!ctx) {
+            console.error('Canvas element with ID "predictionChart" not found.');
+            return;
+        }
+
+        const chartCtx = ctx.getContext('2d');
+        if (!chartCtx) {
+            console.error('Failed to get 2D context for canvas.');
+            return;
+        }
+
+        // Ambil data yang sudah disiapkan dari Flask
+        const labels = {{ labels|tojson }}; // Sekarang berisi semua tanggal historis
+        const actualData = {{ actual_data|tojson }}; // Data aktual historis
+        const inSamplePredictions = {{ in_sample_predictions|tojson }}; // Prediksi in-sample
+        const namaObatJS = "{{ nama_obat }}";
+        const modelTypeJS = "{{ model }}";
+
+        // Debugging logs untuk melihat data di sisi klien
+        console.log('JS DEBUG result.html: Labels:', labels);
+        console.log('JS DEBUG result.html: Actual Data:', actualData);
+        console.log('JS DEBUG result.html: In-Sample Predictions:', inSamplePredictions);
+
+        chart = new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Data Aktual (Validasi)',
+                        data: actualData,
+                        borderColor: '#0d6efd',
+                        //backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 2,
+                        pointRadius: 2, // Sembunyikan titik
+                        tension: 0.1,
+                        spanGaps: true // Penting untuk menangani nilai null
+                    },
+                    {
+                        label: 'Prediksi Model (In-Sample)',
+                        data: inSamplePredictions,
+                        borderColor: '#dc3545',
+                        //backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                        borderWidth: 2,
+                        pointRadius: 2, // Sembunyikan titik
+                        tension: 0.1,
+                        //borderDash: [2, 2], // Garis putus-putus
+                        spanGaps: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `Grafik Performa Model ${modelTypeJS} untuk ${namaObatJS}`,
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        color: '#343a40' // Warna teks judul
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#343a40' // Warna teks legend
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    zoom: {
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: {
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            mode: 'x'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tanggal',
+                            color: '#343a40',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        ticks: {
+                            color: '#343a40',
+                            autoSkip: true,
+                            maxTicksLimit: 20
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Harga (Rp)',
+                            color: '#343a40',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        ticks: {
+                            color: '#343a40',
+                            beginAtZero: false,
+                            callback: function(value, index, values) {
+                                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    function downloadChartImage() {
+        const link = document.createElement('a');
+        link.href = chart.toBase64Image();
+        link.download = 'grafik_performa_model_{{ nama_obat|lower }}.png'; // Gunakan namaObatJS
+        link.click();
+    }
+</script>
+{% endblock %}

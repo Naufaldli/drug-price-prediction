@@ -1,0 +1,320 @@
+/* === Z-Index Fix untuk Dropdown === */
+.dropdown-menu {
+  z-index: 1050 !important;
+}
+
+/* === Navbar === */
+.navbar {
+  background-color: rgba(255, 255, 255, 0) !important; /* Awalnya transparan */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.5s ease;
+}
+
+.navbar,
+.navbar * {
+  position: relative;
+  z-index: 1031; /* Pastikan navbar di atas konten lain */
+}
+
+/* Navbar saat discroll, menjadi tidak transparan */
+.navbar.scrolled {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Warna teks navbar saat discroll (gelap) */
+.navbar.scrolled a,
+.navbar.scrolled .navbar-brand,
+.navbar.scrolled .nav-link { /* Tambahkan .nav-link di sini */
+  color: #212529 !important;
+}
+
+/* Warna teks navbar default (putih, karena di atas background gambar) */
+.navbar a,
+.navbar .navbar-brand,
+.navbar .nav-link {
+  color: #fcfcfc !important; /* Penting: Gunakan !important jika ada konflik */
+}
+
+/* Hover state untuk link navbar */
+.navbar a:hover,
+.navbar .nav-link:hover {
+  color: #0d6efd !important; /* Warna biru primer saat hover */
+}
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.navbar-brand img {
+  height: 50px;
+  width: auto;
+  object-fit: cover;
+  border-radius: 4px;
+  transition: transform 0.3s ease;
+}
+
+.navbar-brand img.hover { /* Ini mungkin dari JS, pertahankan jika masih dipakai */
+  transform: scale(1.05);
+}
+
+/* === Dropdown (untuk Navbar dan lainnya) === */
+.custom-dropdown .dropdown-item,
+.custom-dropdown .dropdown-item-text {
+  color: #212529; /* Warna teks gelap di dropdown, karena background dropdown putih */
+}
+
+.custom-dropdown .dropdown-item:hover {
+  color: #fff;
+  background-color: #0d6efd;
+}
+
+.custom-dropdown .dropdown-item-text strong {
+  color: #0d6efd;
+}
+
+/* === Global Body Styling === */
+body {
+  position: relative;
+  z-index: 0;
+  /* Gunakan Background RS.jpg sebagai latar belakang default untuk semua halaman */
+  background: url('/static/assets/Background RS.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: #212529; /* Warna teks default untuk konten di atas card putih */
+  transition: background-color 0.5s ease, color 0.5s ease;
+  min-height: 100vh; /* Pastikan body setidaknya setinggi viewport */
+}
+
+/* Overlay gelap di atas background gambar */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Overlay gelap */
+  z-index: -1; /* Penting agar background tidak menutupi konten */
+}
+
+/* === Warna Font Konten di atas Latar Belakang Gambar (JANGAN di dalam card) === */
+/* Teks yang harus terlihat di atas gambar latar belakang dan di luar elemen card */
+/* Misalnya, teks di hero-section */
+.hero-section h1,
+.hero-section p.lead,
+.public-text { /* Jika public-text ada dan selalu di luar card */
+  color: #ffffff;
+}
+
+/* Ini untuk garis HR yang mungkin juga di atas background gelap */
+hr {
+  border-color: #ffffff; /* Ubah warna border HR jika di atas background gelap */
+}
+
+/* === Tombol Primer (Default) === */
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+/* === Hero Section (Konsolidasi) === */
+/* Hanya ada satu hero-section sekarang */
+.hero-section {
+  position: relative;
+  height: 320px; /* Tinggi hero section */
+  /* Background sudah diatur di body, jadi tidak perlu di sini lagi,
+     kecuali jika Anda ingin background hero section berbeda */
+  /* background: url('/static/assets/Background RS.jpg') center/cover no-repeat; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center; /* Pastikan teks di tengah */
+}
+
+/* Overlay di hero-section (opsional jika sudah ada di body::before) */
+/* Jika Anda ingin overlay khusus untuk hero-section saja, pertahankan ini.
+ Jika overlay body sudah cukup, ini bisa dihapus untuk menghindari tumpang tindih. */
+/* .hero-section .overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+} */
+
+.hero-section .container {
+  position: relative;
+  z-index: 2; /* Di atas overlay */
+}
+
+/* === Card Styling (Form, Result, Auth) === */
+/* Styling umum untuk card (form upload, auth card, dll.) */
+.card-upload,
+.auth-card,
+.result-info { /* result-info juga sering berfungsi sebagai 'card' */
+  background-color: #ffffffd9; /* Card agak transparan */
+  padding: 30px; /* Default padding, bisa di-override */
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  animation: fadeInUp 0.8s ease;
+  color: #212529; /* Pastikan teks di dalam card gelap dan terbaca */
+  /* max-width dan margin: auto; akan ditangani di HTML untuk centering */
+}
+
+/* Judul di dalam card */
+.card-upload h4,
+.card-upload h3, /* Jika ada h3 di dalam card-upload seperti di future_result.html */
+.auth-card h2 {
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: #0d6efd; /* Warna biru untuk judul card */
+}
+
+/* Styling spesifik untuk form-controls di dalam card */
+.card-upload .form-control,
+.card-upload .form-select,
+.auth-card .form-control,
+.auth-card .form-select {
+  background-color: #fff; /* Pastikan input field putih */
+  color: #212529; /* Teks input gelap */
+  border: 1px solid #ccc;
+}
+
+.card-upload .form-label,
+.auth-card .form-label {
+  color: #212529; /* Warna label form */
+  font-weight: 500;
+}
+
+.form-control::placeholder {
+  color: #999;
+}
+
+/* Tombol di dalam Auth Card */
+.auth-card .btn-primary,
+.auth-card .btn-success {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  width: 100%;
+  font-weight: bold;
+}
+
+/* Link di dalam Auth Card */
+.auth-card a {
+  color: #0d6efd;
+  text-decoration: none;
+}
+
+.auth-card a:hover {
+  text-decoration: underline;
+}
+
+/* Toggle password icon */
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 36px; /* Sesuaikan ini jika posisi tidak pas */
+  cursor: pointer;
+  font-size: 1rem;
+  color: #212529; /* Pastikan ikon terlihat */
+}
+
+/* === Hasil Info (Ringkasan Evaluasi) === */
+.result-info {
+  border-left: 6px solid #0d6efd;
+  border-radius: 10px;
+  /* result-info sudah mewarisi background-color dan color dari card-upload/auth-card */
+}
+.result-info strong { /* Jika ada strong di result-info */
+  color: #0d6efd;
+}
+
+/* === Grafik / Chart Wrapper === */
+.chart-wrapper {
+  background-color: #ffffff; /* Latar belakang putih solid untuk grafik */
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border: 2px solid #0d6efd; /* Border biru di sekeliling grafik */
+  color: #212529; /* Pastikan teks di dalam chart-wrapper gelap */
+}
+
+.chart-wrapper h3 {
+  color: #0d6efd; /* Judul grafik */
+}
+
+/* Pastikan canvas di dalamnya responsif */
+.chart-container canvas {
+  display: block;
+  max-width: 100%;
+}
+
+/* === Tabel Styling === */
+.table-responsive {
+  margin-top: 1rem;
+}
+
+.table {
+  background-color: #ffffff; /* Latar belakang tabel putih */
+  color: #212529; /* Warna teks tabel */
+  border-color: #dee2e6; /* Warna border tabel */
+}
+
+.table-bordered th,
+.table-bordered td {
+  border-color: #dee2e6;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f5f5f5; /* Warna hover pada baris tabel */
+}
+
+.table-light thead th {
+  background-color: #e9ecef; /* Warna header tabel */
+  color: #212529;
+}
+
+/* Tambahan untuk tabel yang bisa di-scroll jika isinya panjang */
+.table-container {
+  max-height: 400px; /* Batasi tinggi tabel */
+  overflow-y: auto; /* Aktifkan scroll vertikal */
+  border: 1px solid #dee2e6; /* Border pada container tabel */
+  border-radius: 8px;
+}
+
+
+/* === Responsif Umum === */
+@media (max-width: 768px) {
+  .card-upload, .auth-card {
+      padding: 20px;
+  }
+  .hero-section {
+      height: 250px; /* Sedikit lebih pendek di mobile */
+  }
+  .hero-section h1 {
+      font-size: 2.5rem; /* Ukuran font lebih kecil */
+  }
+  .navbar-brand {
+      font-size: 20px;
+  }
+}
+
+/* === Animasi === */
+@keyframes fadeInUp {
+  from {
+      opacity: 0;
+      transform: translateY(40px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+/* Hapus bagian yang tidak lagi relevan */
+/* .min-vh-100 { min-height: 100vh; } <-- Sudah diatur di body */
+/* .graph-container { background-color: rgba(0, 0, 0, 0.4); ... } <-- Diganti oleh .chart-wrapper */
+/* @import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css'); <-- Ini harus di head HTML atau import di bagian paling atas CSS */

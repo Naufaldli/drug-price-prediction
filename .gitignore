@@ -1,0 +1,74 @@
+# --- Python cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.eggs/
+*.so
+*.pkl
+*.h5
+*.csv
+*.npy
+*.npz
+*.log
+*.db
+tensorboard/
+
+# --- Model files (too large for GitHub) ---
+models/
+*.pkl
+*.h5
+*.hdf5
+*.ckpt
+*.onnx
+*.joblib
+
+# --- Dataset files ---
+data/
+*.csv
+*.xlsx
+*.xls
+*.json
+
+# --- Virtual environment ---
+myenv/
+venv/
+env/
+ENV/
+.venv/
+
+# --- IDE files ---
+.vscode/
+.idea/
+.vscode/settings.json
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+
+# --- Jupyter Notebook checkpoints ---
+.ipynb_checkpoints/
+
+# --- Temp folders ---
+tmp/
+temp/
+
+# --- Flask cache ---
+instance/
+*.db
+*.sqlite3
+
+# --- Images or large assets (optional, depends on your repo) ---
+static/images/*.png
+static/images/*.jpg
+static/images/*.jpeg
+
+# --- Misc ---
+*.zip
+*.tar.gz
+*.rar
