@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Perbandingan Model{% endblock %}
+
+{% block content %}
+<section class="mb-4 text-center">
+    <h2 class="text-white">📊 Perbandingan Model Prediksi</h2>
+    <h4 class="text-white">Obat: {{ nama_obat }}</h4>
+</section>
+
+<div class="chart-wrapper mb-5">
+    <div class="chart-container bg-white p-3 rounded shadow"> {# Tambahkan styling dari result.html #}
+        <canvas id="comparisonChart" style="width: 100%; height: 500px;"></canvas> {# Sesuaikan style #}
+    </div>
+</div>
+
+<div class="text-center mb-5">
+    <button class="btn btn-outline-primary btn-lg" onclick="downloadChartImage()">⬇️ Download Grafik</button>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-6">
+        <div class="card result-info">
+            <div class="card-header">
+                📊 Metrik Evaluasi LSTM
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>MAE:</strong> <span class="badge bg-primary rounded-pill">{{ lstm_metrics[0]|round(2) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>RMSE:</strong> <span class="badge bg-primary rounded-pill">{{ lstm_metrics[1]|round(2) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>MAPE:</strong> <span class="badge bg-primary rounded-pill">{{ lstm_metrics[2]|round(2) }}%</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card result-info">
+            <div class="card-header">
+                📊 Metrik Evaluasi TCN
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>MAE:</strong> <span class="badge bg-primary rounded-pill">{{ tcn_metrics[0]|round(2) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>RMSE:</strong> <span class="badge bg-primary rounded-pill">{{ tcn_metrics[1]|round(2) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>MAPE:</strong> <span class="badge bg-primary rounded-pill">{{ tcn_metrics[2]|round(2) }}%</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-light p-4 rounded shadow mb-5">
+    <h5>🧠 Penjelasan Singkat</h5>
+    <p>
+        <strong>LSTM</strong> unggul dalam mengenali pola jangka panjang,
+        sementara <strong>TCN</strong> lebih cepat dan cocok untuk data dengan fluktuasi cepat.
+    </p>
+    <p class="text-muted fst-italic">
+        Perhatikan garis prediksi mana yang lebih mendekati harga aktual.
+    </p>
+</div>
+
+<div class="text-center mt-4">
+    <a href="{{ url_for('home') }}" class="btn btn-outline-light">🔙 Kembali ke Beranda</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+<script>
+    let comparisonChart; // Deklarasikan di luar agar bisa diakses fungsi download
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+        // Data dari Flask backend
+        const allLabels = {{ all_labels | tojson }};
+        const actualHistoricalData = {{ actual_historical_data_for_chart | tojson }}; // Data aktual penuh
+        const lstmPredictedSeries = {{ lstm_predicted_series | tojson }}; // Prediksi in-sample LSTM penuh
+        const tcnPredictedSeries = {{ tcn_predicted_series | tojson }}; // Prediksi in-sample TCN penuh
+
+        console.log('DEBUG JS: allLabels length:', allLabels.length);
+        console.log('DEBUG JS: actualHistoricalData length:', actualHistoricalData.length);
+        console.log('DEBUG JS: lstmPredictedSeries length:', lstmPredictedSeries.length);
+        console.log('DEBUG JS: tcnPredictedSeries length:', tcnPredictedSeries.length);
+
+        comparisonChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: allLabels, // Gunakan semua label tanggal
+                datasets: [
+                    {
+                        label: 'Harga Aktual Historis', // Label diubah
+                        data: actualHistoricalData, // Menggunakan seluruh data historis aktual
+                        borderColor: 'rgba(54, 162, 235, 0.8)', // Biru terang
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 0, // Sembunyikan titik
+                        spanGaps: true // Penting untuk menangani nilai null di awal
+                    },
+                    {
+                        label: 'Prediksi In-Sample LSTM',
+                        data: lstmPredictedSeries, // Menggunakan prediksi in-sample LSTM penuh
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(3545, 162, 235, 0.2)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 2, // Sembunyikan titik
+                        spanGaps: true // Penting untuk menangani nilai null di awal
+                    },
+                    {
+                        label: 'Prediksi In-Sample TCN',
+                        data: tcnPredictedSeries, // Menggunakan prediksi in-sample TCN penuh
+                        borderColor: 'rgba(255, 159, 64, 0.8)', // Oranye
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 2, // Sembunyikan titik
+                        spanGaps: true // Penting untuk menangani nilai null di awal
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Perbandingan Harga Aktual vs Prediksi In-Sample Model', // Judul diubah
+                        color: '#343a40',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        labels: {
+                            color: '#343a40',
+                            font: {
+                                size: 14
+                            },
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    zoom: {
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: {
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            mode: 'x'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Tanggal', color: '#343a40', font: { size: 14, weight: 'bold' } },
+                        ticks: { color: '#343a40' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Harga (Rp)', color: '#343a40', font: { size: 14, weight: 'bold' } },
+                        ticks: {
+                            color: '#343a40',
+                            callback: function(value, index, values) {
+                                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+                            }
+                        },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                    }
+                }
+            }
+        });
+    });
+
+    function downloadChartImage() {
+        if (comparisonChart) { // Pastikan chart sudah diinisialisasi
+            const link = document.createElement('a');
+            link.href = comparisonChart.toBase64Image();
+            link.download = 'grafik_perbandingan_model_{{ nama_obat|lower }}.png';
+            link.click();
+        } else {
+            console.error('Grafik belum diinisialisasi.');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% block title %}Hasil Prediksi Masa Depan{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    {# Menampilkan pesan flash dari Flask #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+<section class="hero-section">
+    <div class="overlay"></div>
+    <div class="container text-center text-white">
+        <h1 class="display-5 fw-bold">Prediksi Harga Obat Masa Depan</h1>
+        <p class="lead">Grafik dan data harga yang diprediksi untuk {{ labels|length }} hari ke depan.</p>
+    </div>
+</section>
+
+<section class="form-wrapper py-5">
+    <div class="container d-flex justify-content-center">
+        <div class="card-upload w-100" style="max-width: 900px;">
+            <h4 class="mb-4 text-center">
+                Prediksi Harga Masa Depan - {{ nama_obat|capitalize }} (Model: {{ model }})
+            </h4>
+            <h3 class="mb-4 text-center">Visualisasi Komprehensif: Historis dan Prediksi Masa Depan</h3>
+
+            <div class="mb-5">
+                <canvas id="futurePredictionChart" style="width: 100%; height: 500px;"></canvas>
+            </div>
+
+            <div class="text-center mb-4">
+                <button class="btn btn-primary" id="downloadChart">📥 Download Grafik</button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card result-info">
+                        <div class="card-header">
+                            Detail Data Historis
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Jumlah Data Historis:
+                                    <span class="badge bg-secondary rounded-pill">{{ history_len }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Tanggal Mulai Historis:
+                                    <span class="badge bg-secondary rounded-pill">{{ history_labels[0] if history_labels else 'N/A' }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Tanggal Akhir Historis:
+                                    <span class="badge bg-secondary rounded-pill">{{ history_labels[-1] if history_labels else 'N/A' }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card result-info">
+                        <div class="card-header">
+                            Detail Prediksi Masa Depan
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Jumlah Hari Diprediksi:
+                                    <span class="badge bg-primary rounded-pill">{{ labels|length }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Tanggal Mulai Prediksi:
+                                    <span class="badge bg-primary rounded-pill">{{ labels[0] if labels else 'N/A' }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Tanggal Akhir Prediksi:
+                                    <span class="badge bg-primary rounded-pill">{{ labels[-1] if labels else 'N/A' }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive mt-4">
+                <h5 class="text-center mb-3">Tabel Prediksi Harga Masa Depan</h5>
+                <table class="table table-bordered table-hover text-white-50">
+                    <thead class="bg-dark text-white">
+                        <tr>
+                            <th scope="col">Tanggal</th>
+                            <th scope="col">Harga Prediksi (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for label, price in zip(labels, predicted) %}
+                        <tr>
+                            <td>{{ label }}</td>
+                            <td>{{ "Rp {:,.2f}".format(price|float)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('future') }}" class="btn btn-secondary">Kembali ke Form Prediksi</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.1.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('futurePredictionChart');
+
+        if (!ctx) {
+            console.error('Canvas element with ID "futurePredictionChart" not found.');
+            return;
+        }
+
+        const chartCtx = ctx.getContext('2d');
+        if (!chartCtx) {
+            console.error('Failed to get 2D context for canvas.');
+            return;
+        }
+
+        // Data yang sudah ada dari app.py
+        const allLabels = {{ all_labels_for_future_chart|tojson }};
+        const actualHistoricalData = {{ actual_historical_data_for_chart|tojson }};
+        const inSamplePredictions = {{ in_sample_predictions_for_chart|tojson }};
+        const futurePredictions = {{ future_predictions_for_chart|tojson }};
+        const namaObatJS = {{ nama_obat|tojson }};
+        const futureLabelsLength = {{ labels|length }}; // Panjang prediksi masa depan
+
+        // Debugging logs untuk melihat data
+        console.log('JS DEBUG: allLabels:', allLabels);
+        console.log('JS DEBUG: actualHistoricalData:', actualHistoricalData);
+        console.log('JS DEBUG: inSamplePredictions:', inSamplePredictions);
+        console.log('JS DEBUG: futurePredictions:', futurePredictions);
+        console.log('JS DEBUG: namaObatJS:', namaObatJS);
+        console.log('JS DEBUG: futureLabelsLength:', futureLabelsLength);
+
+
+        const chart = new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: allLabels,
+                datasets: [
+                    {
+                        label: 'Data Aktual Historis',
+                        data: actualHistoricalData,
+                        borderColor: '#0d6efd', // Biru-hijau
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 2,
+                        pointRadius: 2, // Sembunyikan titik
+                        tension: 0.1,
+                        spanGaps: true // Penting untuk null
+                    },
+                    {
+                        label: 'Prediksi Model (In-Sample)',
+                        data: inSamplePredictions,
+                        borderColor: '#ffc107', // Kuning/Oranye
+                        backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                        borderWidth: 2,
+                        pointRadius: 2, // Sembunyikan titik
+                        tension: 0.1,
+                        //borderDash: [2, 2], // Garis putus-putus untuk in-sample
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Prediksi Masa Depan',
+                        data: futurePredictions,
+                        borderColor: '#dc3545', // Merah
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderWidth: 2,
+                        pointRadius: 3, // Tampilkan titik untuk prediksi masa depan
+                        pointBackgroundColor: 'rgb(255, 99, 132)',
+                        tension: 0.1,
+                        //borderDash: [5, 5], // Garis putus-putus lebih panjang
+                        spanGaps: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `Grafik Harga Historis dan Prediksi ${namaObatJS} untuk ${futureLabelsLength} Hari ke Depan`,
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        color: '#343a40'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#343a40'
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    zoom: {
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: {
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            mode: 'x'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tanggal',
+                            color: '#343a40',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        ticks: {
+                            color: '#343a40',
+                            autoSkip: true,
+                            maxTicksLimit: 20
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Harga (Rp)',
+                            color: '#343a40',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        ticks: {
+                            color: '#343a40',
+                            beginAtZero: false,
+                            callback: function(value, index, values) {
+                                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        document.getElementById('downloadChart').addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.href = chart.toBase64Image();
+            link.download = `grafik_prediksi_masa_depan_${namaObatJS.toLowerCase()}.png`;
+            link.click();
+        });
+    });
+</script>
+{% endblock %}
